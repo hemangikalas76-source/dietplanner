@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spectrum Plate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout idea: a plate-shaped hero, a colour picker that re-tints the whole page, then a calculator that feeds a 7-day plan. */
+  --bg: #f6f8f1;
+  --surface: #ffffff;
+  --ink: #17261a;
+  --muted: #55655a;
+  --line: #d9e1d3;
+  --accent: #277a31;
+  --accent-ink: #ffffff;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  --font-body: "Figtree", "Segoe UI", sans-serif;
+  --r: 22px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1a12; --surface: #17251a; --ink: #eef5e8; --muted: #a3b5a6; --line: #2a3d2e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1a12; --surface: #17251a; --ink: #eef5e8; --muted: #a3b5a6; --line: #2a3d2e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  transition: background .5s;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(900px 600px at 80% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+  transition: background .5s;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+section { padding: 72px 0; }
+.kicker { font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.lead { color: var(--muted); max-width: 60ch; margin-top: 16px; }
+.art { display: block; width: 100%; height: auto; }
+
+/* nav */
+nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); background: color-mix(in srgb, var(--bg) 80%, transparent); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 16px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 20px; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand i { width: 26px; height: 26px; border-radius: 50%; background: conic-gradient(#d93a2f, #f28a1c, #f5cb2b, #3f9d3a, #5b2a86, #d93a2f); display: block; }
+nav ul { list-style: none; display: flex; gap: 22px; margin: 0; padding: 0; font-weight: 500; font-size: 15px; }
+nav ul a { text-decoration: none; color: var(--muted); }
+nav ul a:hover { color: var(--ink); }
+
+/* hero */
+.hero { padding: 48px 0 56px; }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+h1 { font-size: clamp(52px, 8.4vw, 108px); font-weight: 800; letter-spacing: -.045em; }
+h1 .l { display: inline-block; }
+.hero p.lead { font-size: 19px; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.btn { font: 600 16px var(--font-body); border: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 13px 22px; border-radius: 999px; cursor: pointer; text-decoration: none; display: inline-block; transition: transform .15s, background .3s; }
+.btn:hover { transform: translateY(-2px); }
+.btn.fill { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.stats { display: flex; gap: 28px; margin-top: 34px; flex-wrap: wrap; }
+.stats b { font-family: var(--font-display); font-size: 34px; display: block; line-height: 1; }
+.stats span { font-size: 14px; color: var(--muted); }
+
+.orbit { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1; margin: 0 auto; }
+.plate { position: absolute; inset: 20%; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  background: radial-gradient(circle at 50% 50%, var(--surface) 0 58%, color-mix(in srgb, var(--accent) 18%, var(--surface)) 59% 100%);
+  box-shadow: 0 0 0 10px var(--surface), 0 0 0 12px var(--line), 0 30px 60px -20px color-mix(in srgb, var(--accent) 50%, transparent); }
+.plate div { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; }
+.plate small { display: block; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.orb { position: absolute; width: 21%; transform: translate(-50%, -50%); animation: bob 5s ease-in-out infinite; filter: drop-shadow(0 8px 8px rgba(0,0,0,.15)); }
+@keyframes bob { 50% { transform: translate(-50%, calc(-50% - 9px)) rotate(4deg); } }
+
+/* rainbow */
+.picker { display: grid; grid-template-columns: 220px 1fr; gap: 28px; margin-top: 36px; align-items: start; }
+.swatches { display: grid; gap: 10px; }
+.sw { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); font: 600 16px var(--font-body); color: var(--ink); cursor: pointer; text-align: left; transition: transform .15s, border-color .2s; }
+.sw i { width: 22px; height: 22px; border-radius: 50%; background: var(--c); flex: none; }
+.sw:hover { transform: translateX(4px); }
+.sw[aria-pressed="true"] { border-color: var(--ink); background: color-mix(in srgb, var(--c) 18%, var(--surface)); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.panel h3 { font-size: 38px; }
+.panel .why { color: var(--muted); margin-top: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.chip { padding: 5px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px; align-content: start; }
+.tile { text-align: center; padding: 16px 10px 12px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+.tile .art { width: 76px; margin: 0 auto 8px; }
+.tile b { font-size: 15px; }
+
+/* planner */
+.planner { display: grid; grid-template-columns: 340px 1fr; gap: 28px; margin-top: 36px; align-items: start; }
+form.card, .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; }
+form.card { display: grid; gap: 16px; }
+label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+input, select { font: 500 16px var(--font-body); padding: 11px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { display: block; text-align: center; padding: 10px 4px; border-radius: 12px; border: 1.5px solid var(--line); cursor: pointer; font-size: 14px; background: var(--bg); }
+.seg input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
+.out { display: grid; gap: 20px; }
+.kcal { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+.kcal .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(54px, 9vw, 88px); line-height: .9; letter-spacing: -.04em; }
+.kcal .big small { font-size: 20px; font-weight: 500; letter-spacing: 0; color: var(--muted); }
+.macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.macro { padding: 12px 14px; border-radius: 14px; background: var(--bg); }
+.macro b { font-family: var(--font-display); font-size: 26px; display: block; line-height: 1.1; }
+.macro span { font-size: 13px; color: var(--muted); }
+.macro .bar { height: 6px; border-radius: 6px; margin-top: 8px; background: var(--c); }
+.plateviz { display: grid; grid-template-columns: 170px 1fr; gap: 24px; align-items: center; }
+.plateviz svg { width: 100%; height: auto; transform: rotate(-90deg); }
+.legend { display: grid; gap: 10px; font-size: 15px; }
+.legend div { display: flex; gap: 10px; align-items: center; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; background: var(--c); flex: none; }
+.legend b { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+/* week */
+.days { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px; margin-top: 32px; }
+.day { flex: 1 0 auto; min-width: 74px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); font: 600 15px var(--font-body); color: var(--ink); cursor: pointer; }
+.day[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.meals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.meal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 10px; transition: opacity .2s; }
+.meal .top { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.meal .ic { display: flex; gap: 4px; }
+.meal .ic .art { width: 44px; }
+.meal h4 { font-family: var(--font-display); font-size: 19px; line-height: 1.15; margin: 0; }
+.meal p { font-size: 14px; color: var(--muted); }
+.meal .kc { margin-top: auto; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.tick { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.tick input { width: 20px; height: 20px; accent-color: var(--accent); padding: 0; }
+.meal.done { opacity: .55; }
+.progress { margin-top: 22px; display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 15px; }
+.progress .track { flex: 1; height: 12px; border-radius: 12px; background: var(--line); overflow: hidden; }
+.progress .fill { height: 100%; width: 0; background: linear-gradient(90deg, #d93a2f, #f28a1c, #f5cb2b, #3f9d3a, #7a3fa0); border-radius: 12px; transition: width .4s; }
+
+/* produce */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin-top: 36px; }
+.pc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; transition: transform .2s, border-color .2s; }
+.pc:hover { transform: translateY(-4px) rotate(-.6deg); border-color: var(--c); }
+.pc .art { width: 96px; margin-bottom: 14px; }
+.pc h3 { font-size: 22px; }
+.pc p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.pc em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 22%, var(--surface)); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 36px; }
+.rule { padding: 22px; border-radius: var(--r); background: var(--ink); color: var(--bg); }
+.rule b { font-family: var(--font-display); font-size: 40px; display: block; line-height: 1; margin-bottom: 8px; }
+.rule p { font-size: 15px; opacity: .85; }
+footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 920px) {
+  .hero .wrap, .picker, .planner, .panel { grid-template-columns: 1fr; }
+  .swatches { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  .meals { grid-template-columns: repeat(2, 1fr); }
+  nav ul { display: none; }
+}
+@media (max-width: 560px) {
+  section { padding: 52px 0; }
+  .meals, .kcal, .plateviz { grid-template-columns: 1fr; }
+  .plateviz svg { max-width: 190px; margin: 0 auto; }
+  .macros { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .orb { animation: none; } html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><i></i>Spectrum Plate</a>
+    <ul>
+      <li><a href="#colors">Colours</a></li>
+      <li><a href="#plan">Your plan</a></li>
+      <li><a href="#week">Week</a></li>
+      <li><a href="#produce">Produce</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <div class="kicker">Plant-forward diet planning</div>
+      <h1 id="h1" aria-label="Eat the spectrum.">Eat the spectrum.</h1>
+      <p class="lead">Every colour on your plate carries a different set of nutrients. Tell us about you, and we build a daily calorie target, a plate split and a seven-day menu around fruits and vegetables.</p>
+      <div class="cta-row">
+        <a class="btn fill" href="#plan">Build my plan</a>
+        <a class="btn" href="#colors">Explore colours</a>
+      </div>
+      <div class="stats">
+        <div><b>400 g</b><span>daily fruit and veg, WHO minimum</span></div>
+        <div><b>5</b><span>colour groups to rotate</span></div>
+        <div><b>7</b><span>days of meals</span></div>
+      </div>
+    </div>
+    <div class="orbit" id="orbit">
+      <div class="plate"><div>½ plants<small>fill half your plate</small></div></div>
+    </div>
+  </div>
+</header>
+
+<section id="colors">
+  <div class="wrap">
+    <div class="kicker">Rainbow rule</div>
+    <h2 style="font-size:clamp(34px,5vw,56px)">Pick a colour. The page follows.</h2>
+    <p class="lead">Plant pigments are also nutrients. Aim for something from each group across the week.</p>
+    <div class="picker">
+      <div class="swatches" id="swatches"></div>
+      <div class="panel" id="panel" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="plan">
+  <div class="wrap">
+    <div class="kicker">Calculator</div>
+    <h2 style="font-size:clamp(34px,5vw,56px)">Your daily numbers</h2>
+    <p class="lead">Uses the Mifflin-St Jeor equation for energy needs. Results update as you type.</p>
+    <div class="planner">
+      <form class="card" id="form" onsubmit="return false">
+        <div class="seg" role="radiogroup" aria-label="Sex">
+          <input type="radio" name="sex" id="sexF" value="f"><label for="sexF">Female</label>
+          <input type="radio" name="sex" id="sexM" value="m" checked><label for="sexM">Male</label>
+          <input type="radio" name="sex" id="sexO" value="m"><label for="sexO">Other</label>
+        </div>
+        <div class="two">
+          <label for="age">Age<input id="age" type="number" min="18" max="90" value="30"></label>
+          <label for="wt">Weight (kg)<input id="wt" type="number" min="35" max="200" value="70"></label>
+        </div>
+        <label for="ht">Height (cm)<input id="ht" type="number" min="130" max="220" value="172"></label>
+        <label for="act">Activity
+          <select id="act">
+            <option value="1.2">Desk job, little exercise</option>
+            <option value="1.375">Light, 1–3 workouts a week</option>
+            <option value="1.55" selected>Moderate, 3–5 workouts</option>
+            <option value="1.725">Heavy, 6–7 workouts</option>
+          </select>
+        </label>
+        <div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:6px">Goal</div>
+          <div class="seg" role="radiogroup" aria-label="Goal">
+            <input type="radio" name="goal" id="gL" value="loss"><label for="gL">Lose</label>
+            <input type="radio" name="goal" id="gM" value="keep" checked><label for="gM">Maintain</label>
+            <input type="radio" name="goal" id="gG" value="gain"><label for="gG">Gain</label>
+          </div>
+        </div>
+      </form>
+
+      <div class="out">
+        <div class="card">
+          <div class="kcal">
+            <div class="big" id="kcal">0<small> kcal/day</small></div>
+            <p id="kcalNote" style="color:var(--muted)"></p>
+          </div>
+          <div class="macros">
+            <div class="macro" style="--c:#d93a2f"><b id="mP">0 g</b><span>Protein</span><div class="bar" id="bP"></div></div>
+            <div class="macro" style="--c:#f2b21c"><b id="mC">0 g</b><span>Carbohydrate</span><div class="bar" id="bC"></div></div>
+            <div class="macro" style="--c:#3f9d3a"><b id="mF">0 g</b><span>Fat</span><div class="bar" id="bF"></div></div>
+          </div>
+        </div>
+        <div class="card plateviz">
+          <svg viewBox="0 0 120 120" role="img" aria-label="Plate split" id="donut"></svg>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="week">
+  <div class="wrap">
+    <div class="kicker">Seven-day menu</div>
+    <h2 style="font-size:clamp(34px,5vw,56px)">What to eat, day by day</h2>
+    <p class="lead" id="weekNote"></p>
+    <div class="days" id="days" role="tablist" aria-label="Day of the week"></div>
+    <div class="meals" id="meals"></div>
+    <div class="progress"><span id="progLabel">0 of 28 meals done</span><div class="track"><div class="fill" id="fill"></div></div></div>
+  </div>
+</section>
+
+<section id="produce">
+  <div class="wrap">
+    <div class="kicker">Produce guide</div>
+    <h2 style="font-size:clamp(34px,5vw,56px)">Thirteen staples to start with</h2>
+    <div class="grid" id="grid"></div>
+    <div class="rules">
+      <div class="rule"><b>½</b><p>Half your plate is fruit and vegetables, with more veg than fruit.</p></div>
+      <div class="rule"><b>3×</b><p>Eat vegetables at three meals so the 400 g target feels easy.</p></div>
+      <div class="rule"><b>5</b><p>Rotate all five colour groups across the week, not every day.</p></div>
+      <div class="rule"><b>2 L</b><p>Water or unsweetened tea. Whole fruit beats juice for fibre.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">General nutrition information only, not medical advice. Talk to a doctor or registered dietitian before changing your diet if you are pregnant, have a medical condition or take medication.</div>
+</footer>
+
+<script>
+/* ---------- illustrations (inline SVG, viewBox 100x100) ---------- */
+var ART = {
+  apple: '<path d="M50 32C40 24 18 28 20 52c2 20 14 36 26 36 3 0 4-2 4-2s1 2 4 2c12 0 24-16 26-36 2-24-20-28-30-20z" fill="#d93a2f"/><path d="M50 32c0-9 3-16 9-20" stroke="#6b4423" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M55 20c6-9 17-9 21-6-3 9-14 13-21 6z" fill="#4f9d2d"/><ellipse cx="33" cy="50" rx="5" ry="10" fill="#fff" opacity=".3" transform="rotate(15 33 50)"/>',
+  orange: '<circle cx="50" cy="56" r="33" fill="#f28a1c"/><circle cx="50" cy="27" r="3" fill="#b85d0a"/><path d="M52 25c6-10 18-12 24-8-3 10-16 14-24 8z" fill="#4f9d2d"/><ellipse cx="35" cy="48" rx="6" ry="11" fill="#fff" opacity=".28" transform="rotate(20 35 48)"/><g fill="#d9740f"><circle cx="60" cy="52" r="1.6"/><circle cx="66" cy="66" r="1.6"/><circle cx="48" cy="72" r="1.6"/><circle cx="72" cy="48" r="1.6"/></g>',
+  strawberry: '<path d="M50 90C26 74 18 54 24 42c4-9 18-12 26-5 8-7 22-4 26 5 6 12-2 32-26 48z" fill="#e2263f"/><g fill="#ffe27a"><ellipse cx="38" cy="52" rx="2" ry="3"/><ellipse cx="52" cy="50" rx="2" ry="3"/><ellipse cx="64" cy="54" rx="2" ry="3"/><ellipse cx="44" cy="66" rx="2" ry="3"/><ellipse cx="58" cy="68" rx="2" ry="3"/><ellipse cx="50" cy="80" rx="2" ry="3"/></g><path d="M26 40l12 4 6-9 6 8 6-8 6 9 12-4-9 11H36z" fill="#3f8f2b"/><path d="M50 36c0-6 1-10 4-14" stroke="#3f8f2b" stroke-width="4" fill="none" stroke-linecap="round"/>',
+  banana: '<path d="M22 18C16 52 34 82 76 83c9 0 12-10 3-13-26-6-36-22-34-54z" fill="#f5cb2b"/><path d="M22 18C16 52 34 82 76 83" stroke="#cf9d10" stroke-width="3" fill="none"/><path d="M22 18l-2-9 11-2 1 9z" fill="#6b4423"/><circle cx="79" cy="77" r="4" fill="#6b4423"/>',
+  avocado: '<path d="M50 8c-14 0-18 22-24 38-6 18 4 44 24 44s30-26 24-44C68 30 64 8 50 8z" fill="#37662a"/><path d="M50 18c-10 0-13 16-18 30-5 14 3 34 18 34s23-20 18-34C63 34 60 18 50 18z" fill="#c3dd6b"/><circle cx="50" cy="62" r="13" fill="#8b5a2b"/><circle cx="46" cy="58" r="4" fill="#fff" opacity=".3"/>',
+  blueberry: '<circle cx="34" cy="62" r="22" fill="#4a5fc1"/><circle cx="66" cy="60" r="20" fill="#3d51b0"/><circle cx="50" cy="36" r="20" fill="#5a6fd0"/><g fill="#26337f"><circle cx="34" cy="52" r="4"/><circle cx="66" cy="51" r="3.6"/><circle cx="50" cy="27" r="3.6"/></g><g fill="#fff" opacity=".3"><circle cx="25" cy="64" r="4"/><circle cx="42" cy="30" r="4"/></g>',
+  lemon: '<g transform="rotate(-25 50 52)"><ellipse cx="50" cy="52" rx="38" ry="27" fill="#f7dd3a"/><circle cx="11" cy="52" r="6" fill="#f7dd3a"/><circle cx="89" cy="52" r="6" fill="#f7dd3a"/><ellipse cx="38" cy="42" rx="10" ry="5" fill="#fff" opacity=".35"/></g><path d="M70 22c6-8 16-8 20-4-3 8-14 11-20 4z" fill="#4f9d2d"/>',
+  broccoli: '<path d="M42 92c0-12 2-24 2-32h12c0 8 2 20 2 32z" fill="#9ccc65"/><g fill="#2e7d32"><circle cx="28" cy="50" r="17"/><circle cx="50" cy="34" r="19"/><circle cx="72" cy="50" r="17"/><circle cx="40" cy="56" r="16"/><circle cx="62" cy="56" r="16"/></g><g fill="#4caf50"><circle cx="24" cy="46" r="4"/><circle cx="46" cy="28" r="4"/><circle cx="68" cy="44" r="4"/><circle cx="50" cy="52" r="4"/></g>',
+  carrot: '<path d="M34 36c0-8 8-12 16-12s16 4 16 12c0 20-12 48-16 58-4-10-16-38-16-58z" fill="#f07a1a"/><path d="M40 50h8M52 64h8M44 76h6" stroke="#c75b0a" stroke-width="2.5" stroke-linecap="round"/><path d="M50 26c-6-10-6-16-2-20 4 4 4 12 2 20z" fill="#4f9d2d"/><path d="M46 28c-10-4-16-10-14-16 8 0 14 6 14 16z" fill="#3f8f2b"/><path d="M54 28c10-4 16-10 14-16-8 0-14 6-14 16z" fill="#3f8f2b"/>',
+  tomato: '<ellipse cx="50" cy="57" rx="37" ry="32" fill="#e53a2a"/><path d="M50 24l6 8 10-6-4 10 10 4-12 2 2 10-12-6-12 6 2-10-12-2 10-4-4-10 10 6z" fill="#3f8f2b"/><ellipse cx="32" cy="52" rx="6" ry="10" fill="#fff" opacity=".28" transform="rotate(20 32 52)"/>',
+  eggplant: '<path d="M62 30c14 4 22 22 12 42-8 16-28 22-40 12C24 74 30 56 42 44c8-8 14-14 20-14z" fill="#5b2a86"/><path d="M56 26c8-3 16 1 18 8-6 5-15 5-21 0z" fill="#3f8f2b"/><path d="M66 26c2-6 6-10 10-13" stroke="#3f8f2b" stroke-width="5" stroke-linecap="round" fill="none"/><ellipse cx="42" cy="68" rx="4" ry="11" fill="#fff" opacity=".25" transform="rotate(35 42 68)"/>',
+  spinach: '<path d="M50 92c-2-16-30-24-30-50C20 22 36 8 50 8s30 14 30 34c0 26-28 34-30 50z" fill="#2e8b3c"/><path d="M50 90V20M50 40L34 28M50 54L30 42M50 40l16-12M50 54l20-12" stroke="#7fd08a" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+  beet: '<path d="M50 34c22 0 34 14 32 32-2 16-16 26-32 26S20 82 18 66c-2-18 10-32 32-32z" fill="#a3174f"/><path d="M47 92c0 4 2 7 4 7s3-3 3-7z" fill="#8a1240"/><path d="M50 34c-8-8-9-18-4-26 8 6 9 18 4 26z" fill="#3f8f2b"/><path d="M50 34c8-6 14-8 20-6-2 8-10 10-20 6z" fill="#4f9d2d"/><ellipse cx="34" cy="60" rx="5" ry="10" fill="#fff" opacity=".25" transform="rotate(20 34 60)"/>'
+};
+function art(k, extra) {
+  return '<svg class="art ' + (extra || '') + '" viewBox="0 0 100 100" aria-hidden="true">' + ART[k] + '</svg>';
+}
+
+var NAMES = { apple:'Apple', orange:'Orange', strawberry:'Strawberry', banana:'Banana', avocado:'Avocado', blueberry:'Blueberries', lemon:'Lemon', broccoli:'Broccoli', carrot:'Carrot', tomato:'Tomato', eggplant:'Aubergine', spinach:'Spinach', beet:'Beetroot' };
+var FACTS = {
+  apple: ['Pectin fibre feeds gut bacteria.', 'Fibre'],
+  orange: ['One fruit covers a full day of vitamin C.', 'Vitamin C'],
+  strawberry: ['Low in sugar for a sweet fruit.', 'Manganese'],
+  banana: ['Slow-release carbs for training days.', 'Potassium'],
+  avocado: ['Unsaturated fat helps absorb vitamins A, D, E, K.', 'Healthy fat'],
+  blueberry: ['Anthocyanins give the deep blue colour.', 'Antioxidants'],
+  lemon: ['Squeeze over greens to help absorb iron.', 'Vitamin C'],
+  broccoli: ['Also rich in vitamin K and folate.', 'Sulforaphane'],
+  carrot: ['Beta-carotene turns into vitamin A.', 'Vitamin A'],
+  tomato: ['Cooking raises lycopene availability.', 'Lycopene'],
+  eggplant: ['Skin holds the purple pigment nasunin.', 'Fibre'],
+  spinach: ['Pair with lemon or tomato for iron uptake.', 'Iron, folate'],
+  beet: ['Natural nitrates support blood flow.', 'Nitrates']
+};
+var COLORS = [
+  { id:'red', name:'Red', c:'#d93a2f', ink:'#ffffff', pig:'Lycopene and anthocyanins', why:'Red produce is linked with heart health and healthy blood pressure. Eat tomatoes cooked with a little olive oil to absorb more lycopene.', items:['tomato','strawberry','apple'], chips:['Heart','Skin','Vitamin C'] },
+  { id:'orange', name:'Orange', c:'#e8731a', ink:'#231100', pig:'Carotenoids', why:'Beta-carotene becomes vitamin A in the body, which supports vision and immune defences. Fat in the meal helps absorption.', items:['carrot','orange'], chips:['Eyes','Immunity','Vitamin A'] },
+  { id:'yellow', name:'Yellow', c:'#f2c230', ink:'#231a00', pig:'Flavonoids and vitamin C', why:'Bright yellow fruit adds potassium and vitamin C. Bananas are an easy pre-workout snack.', items:['banana','lemon'], chips:['Energy','Potassium','Digestion'] },
+  { id:'green', name:'Green', c:'#277a31', ink:'#ffffff', pig:'Chlorophyll, folate, vitamin K', why:'Leafy and cruciferous vegetables carry folate, iron and vitamin K. Eat some every day.', items:['broccoli','spinach','avocado'], chips:['Bones','Iron','Folate'] },
+  { id:'violet', name:'Violet and blue', c:'#7a3fa0', ink:'#ffffff', pig:'Anthocyanins', why:'Dark purple produce is rich in anthocyanins, studied for brain and blood vessel health.', items:['blueberry','eggplant','beet'], chips:['Brain','Vessels','Antioxidants'] }
+];
+
+/* ---------- theme + page-wide colour ---------- */
+var root = document.documentElement;
+function setAccent(col) { root.style.setProperty('--accent', col.c); root.style.setProperty('--accent-ink', col.ink); }
+
+/* ---------- hero ---------- */
+(function () {
+  var word = 'spectrum.', cols = ['#d93a2f','#e8731a','#f2c230','#3f9d3a','#277a31','#2f7fb8','#5b2a86','#a3174f','#d93a2f'];
+  var h = document.getElementById('h1'), out = 'Eat the ';
+  for (var i = 0; i < word.length; i++) out += '<span class="l" aria-hidden="true" style="color:' + cols[i] + '">' + word[i] + '</span>';
+  h.innerHTML = out;
+  var keys = ['apple','orange','strawberry','banana','avocado','blueberry','broccoli','carrot','tomato','eggplant','beet','lemon'];
+  var orbit = document.getElementById('orbit');
+  keys.forEach(function (k, i) {
+    var a = (i / keys.length) * Math.PI * 2 - Math.PI / 2, r = 41;
+    var d = document.createElement('div');
+    d.className = 'orb';
+    d.style.left = (50 + Math.cos(a) * r) + '%';
+    d.style.top = (50 + Math.sin(a) * r) + '%';
+    d.style.animationDelay = (-i * 0.42) + 's';
+    d.innerHTML = art(k);
+    orbit.appendChild(d);
+  });
+})();
+
+/* ---------- colour picker ---------- */
+(function () {
+  var sw = document.getElementById('swatches'), panel = document.getElementById('panel');
+  function show(i) {
+    var col = COLORS[i];
+    setAccent(col);
+    [].forEach.call(sw.children, function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+    panel.innerHTML =
+      '<div><div class="kicker" style="margin-bottom:8px">' + col.pig + '</div><h3>' + col.name + '</h3><p class="why">' + col.why + '</p><div class="chips">' +
+      col.chips.map(function (c) { return '<span class="chip">' + c + '</span>'; }).join('') + '</div></div>' +
+      '<div class="tiles">' + col.items.map(function (k) { return '<div class="tile">' + art(k) + '<b>' + NAMES[k] + '</b></div>'; }).join('') + '</div>';
+  }
+  COLORS.forEach(function (col, i) {
+    var b = document.createElement('button');
+    b.className = 'sw'; b.style.setProperty('--c', col.c); b.type = 'button';
+    b.innerHTML = '<i></i>' + col.name;
+    b.addEventListener('click', function () { show(i); });
+    sw.appendChild(b);
+  });
+  show(3);
+})();
+
+/* ---------- calculator ---------- */
+var calc = { kcal: 2000 };
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function run() {
+    var sex = document.querySelector('input[name=sex]:checked').value;
+    var goal = document.querySelector('input[name=goal]:checked').value;
+    var age = +$('age').value || 30, wt = +$('wt').value || 70, ht = +$('ht').value || 170, act = +$('act').value;
+    var bmr = 10 * wt + 6.25 * ht - 5 * age + (sex === 'm' ? 5 : -161);
+    var tdee = bmr * act, kcal = tdee, note, pPerKg, plate;
+    if (goal === 'loss') { kcal = tdee - 450; pPerKg = 1.6; plate = [55, 20, 25]; note = 'About 450 kcal under maintenance, which suits roughly 0.4 kg of loss a week.'; }
+    else if (goal === 'gain') { kcal = tdee + 300; pPerKg = 1.6; plate = [40, 35, 25]; note = 'About 300 kcal over maintenance for steady, lean gain.'; }
+    else { pPerKg = 1.2; plate = [50, 25, 25]; note = 'Matches your estimated daily energy use of ' + Math.round(tdee / 10) * 10 + ' kcal.'; }
+    var floor = sex === 'm' ? 1500 : 1200;
+    if (kcal < floor) { kcal = floor; note += ' Raised to a safe minimum of ' + floor + ' kcal.'; }
+    kcal = Math.round(kcal / 10) * 10;
+    var p = Math.round(pPerKg * wt), f = Math.round(kcal * 0.27 / 9), c = Math.round((kcal - p * 4 - f * 9) / 4);
+    $('kcal').innerHTML = kcal.toLocaleString() + '<small> kcal/day</small>';
+    $('kcalNote').textContent = note;
+    $('mP').textContent = p + ' g'; $('mC').textContent = c + ' g'; $('mF').textContent = f + ' g';
+    var tot = p * 4 + c * 4 + f * 9;
+    $('bP').style.width = Math.round(p * 4 / tot * 100) + '%';
+    $('bC').style.width = Math.round(c * 4 / tot * 100) + '%';
+    $('bF').style.width = Math.round(f * 9 / tot * 100) + '%';
+    var grams = Math.min(700, Math.max(400, Math.round(kcal / 2000 * 450 / 50) * 50));
+    var segs = [['Fruit and vegetables', plate[0], '#3f9d3a', grams + ' g'], ['Whole grains', plate[1], '#f2b21c', Math.round(kcal * plate[1] / 100 / 3.6 / 10) * 10 + ' g cooked'], ['Protein', plate[2], '#d93a2f', Math.round(p * 0.55) + ' g from this share']];
+    var C = 2 * Math.PI * 40, off = 0, svg = '<circle cx="60" cy="60" r="40" fill="none" stroke="var(--line)" stroke-width="22"/>';
+    segs.forEach(function (s) {
+      var len = C * s[1] / 100;
+      svg += '<circle cx="60" cy="60" r="40" fill="none" stroke="' + s[2] + '" stroke-width="22" stroke-dasharray="' + (len - 1.5) + ' ' + (C - len + 1.5) + '" stroke-dashoffset="' + (-off) + '"/>';
+      off += len;
+    });
+    $('donut').innerHTML = svg;
+    $('donut').setAttribute('aria-label', 'Plate split: ' + segs.map(function (s) { return s[1] + '% ' + s[0]; }).join(', '));
+    $('legend').innerHTML = segs.map(function (s) { return '<div style="--c:' + s[2] + '"><i></i>' + s[0] + '<b>' + s[1] + '%</b></div>'; }).join('') +
+      '<p style="font-size:14px;color:var(--muted)">Target about <b style="color:var(--ink)">' + grams + ' g</b> of fruit and vegetables a day, around ' + Math.round(grams / 80) + ' portions of 80 g.</p>';
+    calc.kcal = kcal;
+    if (window.renderWeek) window.renderWeek();
+  }
+  document.getElementById('form').addEventListener('input', run);
+  window.runCalc = run;
+})();
+
+/* ---------- week plan ---------- */
+(function () {
+  var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var SLOTS = [['Breakfast', .25], ['Lunch', .33], ['Snack', .10], ['Dinner', .32]];
+  var W = [
+    [['Oats with strawberries, banana and chia', 'Rolled oats cooked in milk or soy milk, topped with sliced fruit.', ['strawberry','banana']],
+     ['Chickpea and spinach salad', 'Tomato, grated carrot, olive oil and lemon dressing.', ['spinach','tomato','carrot']],
+     ['Apple slices with almond butter', 'A tablespoon of nut butter keeps you full.', ['apple']],
+     ['Stir-fried broccoli and tofu with brown rice', 'Ginger, garlic and a splash of soy sauce.', ['broccoli']]],
+    [['Avocado and spinach toast', 'Wholegrain toast, two eggs or tofu scramble.', ['avocado','spinach']],
+     ['Lentil soup with carrot and kale', 'Batch cook it. It keeps three days.', ['carrot','spinach']],
+     ['Orange and a handful of walnuts', 'Eat the segments rather than juice.', ['orange']],
+     ['Roasted aubergine and tomato quinoa bowl', 'Finish with parsley and lemon.', ['eggplant','tomato','lemon']]],
+    [['Blueberry yoghurt parfait', 'Plain yoghurt, blueberries, pumpkin seeds.', ['blueberry']],
+     ['Beetroot, avocado and edamame rice bowl', 'Brown rice base, sesame seeds on top.', ['beet','avocado']],
+     ['Carrot sticks and hummus', 'Cucumber or pepper work too.', ['carrot']],
+     ['Tomato and broccoli vegetable curry', 'Coconut milk or yoghurt base, served with a small roti.', ['tomato','broccoli']]],
+    [['Banana and spinach smoothie', 'Blend with oats, milk and a spoon of peanut butter.', ['banana','spinach']],
+     ['Grilled vegetable wrap', 'Wholewheat wrap, hummus, aubergine and tomato.', ['eggplant','tomato']],
+     ['Strawberries with plain yoghurt', 'No added sugar needed.', ['strawberry']],
+     ['Baked salmon or paneer, broccoli, sweet potato', 'Roast the vegetables on one tray.', ['broccoli','carrot']]],
+    [['Veggie omelette', 'Two eggs, spinach, tomato and a slice of toast.', ['spinach','tomato']],
+     ['Quinoa and lemon tabbouleh', 'Parsley, tomato, cucumber, olive oil.', ['lemon','tomato']],
+     ['Apple with peanut butter', 'Choose a nut butter with nuts as the only ingredient.', ['apple']],
+     ['Dal with mixed vegetables and roti', 'Add a handful of spinach at the end.', ['spinach','carrot']]],
+    [['Wholegrain pancakes with blueberries', 'Use mashed banana as the sweetener.', ['blueberry','banana']],
+     ['Avocado, bean and corn salad', 'Lime, coriander, cherry tomatoes.', ['avocado','tomato']],
+     ['Orange segments and pistachios', 'Shelled nuts: about 25 g.', ['orange']],
+     ['Aubergine and chickpea stew with brown rice', 'Smoked paprika and a spoon of tomato paste.', ['eggplant','tomato']]],
+    [['Chia pudding with strawberries and banana', 'Soak overnight in milk or soy milk.', ['strawberry','banana']],
+     ['Beetroot and carrot salad with feta or tofu', 'Grate raw, dress with lemon.', ['beet','carrot','lemon']],
+     ['Seasonal fruit and herbal tea', 'Whatever is ripe this week.', ['apple','orange']],
+     ['Big vegetable soup with wholegrain bread', 'Carrot, tomato, spinach, white beans.', ['carrot','tomato','spinach']]]
+  ];
+  var cur = 0, done = {};
+  var daysEl = document.getElementById('days'), mealsEl = document.getElementById('meals');
+  DAYS.forEach(function (d, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'day'; b.setAttribute('role', 'tab'); b.textContent = d;
+    b.addEventListener('click', function () { cur = i; render(); });
+    daysEl.appendChild(b);
+  });
+  function render() {
+    [].forEach.call(daysEl.children, function (b, i) { b.setAttribute('aria-selected', i === cur ? 'true' : 'false'); });
+    mealsEl.innerHTML = '';
+    W[cur].forEach(function (m, s) {
+      var id = cur + '-' + s, kc = Math.round(calc.kcal * SLOTS[s][1] / 10) * 10;
+      var el = document.createElement('div');
+      el.className = 'meal' + (done[id] ? ' done' : '');
+      el.innerHTML = '<div class="top"><span>' + SLOTS[s][0] + '</span></div><div class="ic">' + m[2].map(function (k) { return art(k); }).join('') + '</div><h4>' + m[0] + '</h4><p>' + m[1] + '</p><div class="kc">≈ ' + kc + ' kcal</div>' +
+        '<label class="tick"><input type="checkbox" id="t' + id + '"' + (done[id] ? ' checked' : '') + '> Eaten</label>';
+      el.querySelector('input').addEventListener('change', function (e) { done[id] = e.target.checked; el.classList.toggle('done', e.target.checked); progress(); });
+      mealsEl.appendChild(el);
+    });
+    document.getElementById('weekNote').textContent = 'Meals add up to about ' + calc.kcal.toLocaleString() + ' kcal a day for your numbers. Tick meals off as you go.';
+    progress();
+  }
+  function progress() {
+    var n = Object.keys(done).filter(function (k) { return done[k]; }).length;
+    document.getElementById('progLabel').textContent = n + ' of 28 meals done';
+    document.getElementById('fill').style.width = (n / 28 * 100) + '%';
+  }
+  window.renderWeek = render;
+  window.runCalc();
+})();
+
+/* ---------- produce grid ---------- */
+(function () {
+  var colorOf = { tomato:'#d93a2f', strawberry:'#d93a2f', apple:'#d93a2f', carrot:'#e8731a', orange:'#e8731a', banana:'#f2c230', lemon:'#f2c230', broccoli:'#277a31', spinach:'#277a31', avocado:'#277a31', blueberry:'#7a3fa0', eggplant:'#7a3fa0', beet:'#7a3fa0' };
+  document.getElementById('grid').innerHTML = Object.keys(NAMES).map(function (k) {
+    return '<article class="pc" style="--c:' + colorOf[k] + '">' + art(k) + '<h3>' + NAMES[k] + '</h3><p>' + FACTS[k][0] + '</p><em>' + FACTS[k][1] + '</em></article>';
+  }).join('');
+})();
+</script>
+</body>
+</html>
